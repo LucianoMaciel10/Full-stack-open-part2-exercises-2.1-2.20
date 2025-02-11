@@ -38,13 +38,25 @@ const App = () => {
             const updatePersons = persons.map(person => person.id === data.id ? data : person)
             setPersons(updatePersons)
           }).catch(error => {
-            setNotification([`Information of ${person.name} has already been removed from server`, 'error'])
-            setTimeout(() => {
-              setNotification(null)
-            },5000)
-            setPersons(persons.filter(p => p.id !== person.id))
-          })
+            if (error.response) {
+              if (error.response.status === 404) {
+                // La persona ya no existe en la base de datos
+                setNotification([`Information of ${person.name} has already been removed from server`, 'error']);
+                setPersons(persons.filter((p) => p.id !== person.id));
+              } else if (error.response.status === 400) {
+                // Error de validación (ejemplo: número mal formateado)
+                setNotification([error.response.data.error, 'error']);
+              } else {
+                setNotification(['An unexpected error occurred', 'error']);
+              }
+            } else {
+              setNotification(['Network error, please try again', 'error']);
+            }
+            setTimeout(() => setNotification(null), 5000);
+          });
       }
+      setNewName("");
+      setNewNumber("");
       return;
     }
 
@@ -57,6 +69,14 @@ const App = () => {
         },5000)
         setPersons(persons.concat(data))
       })
+      .catch(error => {
+        if (error.response && error.response.data.error) {
+          setNotification([error.response.data.error, 'error']);
+        } else {
+          setNotification(['An unexpected error occurred', 'error']);
+        }
+        setTimeout(() => setNotification(null), 5000);
+      });
     setNewName("");
     setNewNumber("");
   };
